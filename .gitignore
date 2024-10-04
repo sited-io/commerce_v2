@@ -1,0 +1,5 @@
+/target
+/.notes
+.env*
+run.sh
+src/prisma.rs

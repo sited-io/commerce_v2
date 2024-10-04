@@ -1,0 +1,141 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "cargo prisma"
+  output   = "../src/prisma.rs"
+}
+
+model Offer {
+  offer_id   String   @id @default(uuid()) @db.Uuid
+  owner      String
+  created_at DateTime @default(now()) @db.Timestamptz()
+  updated_at DateTime @updatedAt @db.Timestamptz()
+
+  details        OfferDetails?
+  offer_type     OfferType?
+  price          OfferPrice?
+  shipping_rates ShippingRate[]
+  images         OfferImage[]
+  shops          Shop[]
+
+  @@map("offers")
+}
+
+model OfferDetails {
+  offer_id    String  @id @db.Uuid
+  owner       String
+  name        String
+  description String?
+
+  offer Offer @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
+
+  @@map("offer_details")
+}
+
+model OfferType {
+  offer_id       String       @id @db.Uuid
+  owner          String
+  offer_type_key OfferTypeKey
+
+  offer Offer @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
+
+  @@map("offer_types")
+}
+
+enum OfferTypeKey {
+  PHYSICAL
+  DIGITAL
+}
+
+model OfferPrice {
+  offer_id    String @id @db.Uuid
+  owner       String
+  unit_amount Int
+  currency    String
+
+  price_type PriceType?
+  offer      Offer      @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
+
+  @@map("offer_prices")
+}
+
+model PriceType {
+  offer_id                    String       @id @db.Uuid
+  owner                       String
+  price_type_key              PriceTypeKey
+  recurring_interval          String?
+  recurring_interval_count    Int?
+  recurring_trial_period_days Int?
+
+  offer_price OfferPrice @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
+
+  @@map("price_types")
+}
+
+enum PriceTypeKey {
+  ONE_TIME
+  RECURRING
+}
+
+model ShippingRate {
+  shipping_rate_id   String   @id @default(uuid()) @db.Uuid
+  offer_id           String   @db.Uuid
+  owner              String
+  created_at         DateTime @default(now()) @db.Timestamptz()
+  updated_at         DateTime @default(now()) @db.Timestamptz()
+  unit_amount        Int
+  currency           String
+  all_countries      Boolean
+  specific_countries String[]
+
+  offer Offer @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
+
+  @@map("shipping_rates")
+}
+
+model OfferImage {
+  offer_image_id String   @id @default(uuid()) @db.Uuid
+  offer_id       String   @db.Uuid
+  file_id        String   @db.Uuid
+  owner          String
+  created_at     DateTime @default(now()) @db.Timestamptz()
+  updated_at     DateTime @default(now()) @db.Timestamptz()
+  ordering       Int
+
+  file  SubFile @relation(fields: [file_id], references: [file_id], onDelete: Cascade)
+  offer Offer   @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
+
+  @@map("offer_images")
+}
+
+model Shop {
+  shop_id    String   @id @default(uuid()) @db.Uuid
+  owner      String
+  website_id String
+  created_at DateTime @default(now()) @db.Timestamptz()
+  updated_at DateTime @updatedAt @db.Timestamptz()
+
+  offers Offer[]
+
+  @@map("shops")
+}
+
+model SubFile {
+  file_id      String         @id @default(uuid()) @db.Uuid
+  owner        String
+  content_type ContentTypeKey
+  file_name    String
+  file_url     String?
+
+  offer_images OfferImage[]
+
+  @@map("sub_files")
+}
+
+enum ContentTypeKey {
+  UNSPECIFIED
+  IMAGE
+}
