@@ -417,14 +417,13 @@ dependencies = [
  "prost",
  "reqwest 0.12.8",
  "serde",
- "service-apis",
  "tokio",
  "tonic",
- "tonic-reflection",
  "tonic-web",
  "tower-http 0.6.1",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]
@@ -1468,15 +1467,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "itertools"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
-dependencies = [
- "either",
-]
-
-[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2461,7 +2451,7 @@ source = "git+https://github.com/Brendonovich/prisma-engines?tag=pcr-0.6.10#c4ae
 dependencies = [
  "bigdecimal",
  "chrono",
- "itertools 0.10.5",
+ "itertools",
  "once_cell",
  "prisma-value",
  "psl",
@@ -2511,19 +2501,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e9552f850d5f0964a4e4d0bf306459ac29323ddfbae05e35a7c0d35cb0803cc5"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools",
  "proc-macro2",
  "quote",
  "syn 2.0.79",
-]
-
-[[package]]
-name = "prost-types"
-version = "0.13.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4759aa0d3a6232fb8dbdb97b61de2c20047c68aca932c7ed76da9d788508d670"
-dependencies = [
- "prost",
 ]
 
 [[package]]
@@ -2546,7 +2527,7 @@ dependencies = [
  "diagnostics",
  "enumflags2",
  "indoc",
- "itertools 0.10.5",
+ "itertools",
  "lsp-types",
  "once_cell",
  "parser-database",
@@ -2618,7 +2599,7 @@ dependencies = [
  "chrono",
  "futures",
  "indexmap 1.9.3",
- "itertools 0.10.5",
+ "itertools",
  "prisma-models",
  "prisma-value",
  "serde",
@@ -2643,7 +2624,7 @@ dependencies = [
  "enumflags2",
  "futures",
  "indexmap 1.9.3",
- "itertools 0.10.5",
+ "itertools",
  "lazy_static",
  "lru",
  "once_cell",
@@ -2857,7 +2838,7 @@ dependencies = [
  "futures",
  "graphql-parser",
  "indexmap 1.9.3",
- "itertools 0.10.5",
+ "itertools",
  "psl",
  "query-core",
  "serde",
@@ -3102,7 +3083,7 @@ name = "schema-builder"
 version = "0.1.0"
 source = "git+https://github.com/Brendonovich/prisma-engines?tag=pcr-0.6.10#c4aeef82dbae310e974d6122160c7e3b5fb6df53"
 dependencies = [
- "itertools 0.10.5",
+ "itertools",
  "lazy_static",
  "once_cell",
  "prisma-models",
@@ -3258,14 +3239,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.79",
-]
-
-[[package]]
-name = "service-apis"
-version = "0.1.0"
-dependencies = [
- "prost",
- "tonic",
 ]
 
 [[package]]
@@ -3469,7 +3442,7 @@ dependencies = [
  "chrono",
  "cuid",
  "futures",
- "itertools 0.10.5",
+ "itertools",
  "once_cell",
  "opentelemetry",
  "prisma-models",
@@ -3865,19 +3838,6 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
-]
-
-[[package]]
-name = "tonic-reflection"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "878d81f52e7fcfd80026b7fdb6a9b578b3c3653ba987f87f0dce4b64043cba27"
-dependencies = [
- "prost",
- "prost-types",
- "tokio",
- "tokio-stream",
- "tonic",
 ]
 
 [[package]]

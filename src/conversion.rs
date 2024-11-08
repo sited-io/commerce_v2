@@ -1,16 +1,16 @@
-use service_apis::sited_io::commerce::v2::offer::Details;
-use service_apis::sited_io::commerce::v2::offer_type::{
+use crate::api::sited_io::commerce::v2::offer::Details;
+use crate::api::sited_io::commerce::v2::offer_type::{
     Digital, OfferTypeKind, Physical,
 };
-use service_apis::sited_io::commerce::v2::price_type::recurring::Interval;
-use service_apis::sited_io::commerce::v2::price_type::{
+use crate::api::sited_io::commerce::v2::price_type::recurring::Interval;
+use crate::api::sited_io::commerce::v2::price_type::{
     OneTime, PriceTypeKind, Recurring,
 };
-use service_apis::sited_io::commerce::v2::{
+use crate::api::sited_io::commerce::v2::{
     Offer, OfferImage, OfferPrice, OfferType, PriceType, ShippingRate, Shop,
 };
-use service_apis::sited_io::country::v1::CountryCode;
-use service_apis::sited_io::price::v1::{CurrencyCode, Price};
+use crate::api::sited_io::country::v1::CountryCode;
+use crate::api::sited_io::price::v1::{CurrencyCode, Price};
 
 use crate::prisma::{
     offer, offer_details, offer_image, offer_price, offer_type, price_type,

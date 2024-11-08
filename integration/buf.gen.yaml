@@ -1,0 +1,14 @@
+version: v2
+clean: true
+inputs:
+  - directory: proto
+plugins:
+  - local: protoc-gen-es
+    out: src/api
+    opt:
+      - target=ts
+
+  - local: protoc-gen-connect-es
+    out: src/api
+    opt:
+      - target=ts

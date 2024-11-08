@@ -2,6 +2,7 @@ pub mod auth;
 mod cors;
 pub mod query;
 mod trace;
+pub mod validate;
 
 pub use cors::init_cors_layer;
 pub use trace::init_trace_layer;

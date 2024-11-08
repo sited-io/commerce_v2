@@ -1,0 +1,22 @@
+version: v2
+clean: true
+managed:
+  enabled: true
+plugins:
+  - local: protoc-gen-prost
+    out: src/api/gen
+    opt:
+      - bytes=.
+      - file_descriptor_set
+
+  # - local: protoc-gen-prost-serde
+  #   out: src/api/gen
+
+  - local: protoc-gen-tonic
+    out: src/api/gen
+
+  - local: protoc-gen-prost-crate
+    out: src/api/gen
+    strategy: all
+    opt:
+      - no_features

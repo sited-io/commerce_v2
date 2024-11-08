@@ -1,7 +1,7 @@
 use async_nats::client::FlushError;
 use async_nats::{Client, ConnectOptions};
 
-use service_apis::sited_io::commerce::v2::{Offer, Shop};
+use crate::api::sited_io::commerce::v2::{Offer, Shop};
 
 pub struct Publisher {
     client: Client,

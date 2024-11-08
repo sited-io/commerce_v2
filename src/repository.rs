@@ -1,11 +1,11 @@
 use prisma_client_rust::or;
 use std::sync::Arc;
 
-use service_apis::sited_io::commerce::v2::offer::Details;
-use service_apis::sited_io::commerce::v2::{
+use crate::api::sited_io::commerce::v2::offer::Details;
+use crate::api::sited_io::commerce::v2::{
     Offer, OfferType, OffersFilterField, OffersOrderByField, PriceType, Shop,
 };
-use service_apis::sited_io::query::v1::Direction;
+use crate::api::sited_io::query::v1::Direction;
 
 use crate::prisma::offer::{OrderByParam, WhereParam};
 use crate::prisma::read_filters::{

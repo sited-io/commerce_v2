@@ -1,8 +1,6 @@
 use tonic::Status;
 
-use service_apis::sited_io::query::v1::{
-    PaginationRequest, PaginationResponse,
-};
+use crate::api::sited_io::query::v1::{PaginationRequest, PaginationResponse};
 
 /// Returns skip and take from PaginationRequest
 pub fn paginate(

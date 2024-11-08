@@ -1,0 +1,29 @@
+{
+  "name": "integration",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "pretest": "tsc",
+    "test": "node --test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.10",
+    "@types/node": "^22.7.4",
+    "typescript": "^5.6.2"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^1.10.0",
+    "@connectrpc/connect": "^1.5.0",
+    "@connectrpc/connect-web": "^1.5.0",
+    "dotenv": "^16.4.5",
+    "lodash": "^4.17.21",
+    "mocha": "^10.7.3"
+  }
+}

@@ -1,6 +1,7 @@
 #[allow(warnings, unused)]
 pub mod prisma;
 
+pub mod api;
 pub mod common;
 pub mod conversion;
 mod error;

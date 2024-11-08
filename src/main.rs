@@ -1,8 +1,5 @@
 use std::sync::Arc;
 use tonic::transport::Server;
-use tonic_reflection::server::v1alpha::{
-    ServerReflection, ServerReflectionServer,
-};
 
 use commerce_v2::common::auth::Auth;
 use commerce_v2::common::{get_env_var, init_cors_layer, init_trace_layer};
@@ -36,9 +33,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // initialize gRPC service
     let service = CommerceService::init(auth, repository, publisher);
 
-    // initialize reflection service
-    let reflection_service = init_reflection_service();
-
     // initialize layers
     let trace_layer = init_trace_layer();
     let cors_layer = init_cors_layer();
@@ -49,29 +43,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .accept_http1(true)
         .layer(trace_layer)
         .layer(cors_layer)
-        .add_service(tonic_web::enable(reflection_service))
         .add_service(tonic_web::enable(service))
         .serve(host.parse().unwrap())
         .await?;
 
     Ok(())
-}
-
-pub fn init_reflection_service() -> ServerReflectionServer<impl ServerReflection>
-{
-    tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(
-            service_apis::sited_io::commerce::v2::FILE_DESCRIPTOR_SET,
-        )
-        .register_encoded_file_descriptor_set(
-            service_apis::sited_io::country::v1::FILE_DESCRIPTOR_SET,
-        )
-        .register_encoded_file_descriptor_set(
-            service_apis::sited_io::price::v1::FILE_DESCRIPTOR_SET,
-        )
-        .register_encoded_file_descriptor_set(
-            service_apis::sited_io::query::v1::FILE_DESCRIPTOR_SET,
-        )
-        .build_v1alpha()
-        .unwrap()
 }

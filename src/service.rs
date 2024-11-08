@@ -1,7 +1,7 @@
 use tonic::{async_trait, Request, Response, Status};
 
-use service_apis::sited_io::commerce::v2::price_type::PriceTypeKind;
-use service_apis::sited_io::commerce::v2::{
+use crate::api::sited_io::commerce::v2::price_type::PriceTypeKind;
+use crate::api::sited_io::commerce::v2::{
     commerce_service_server, AddImageToOfferRequest, AddImageToOfferResponse,
     AddOfferToShopRequest, AddOfferToShopResponse,
     AddShippingRateToOfferRequest, AddShippingRateToOfferResponse,
@@ -16,10 +16,11 @@ use service_apis::sited_io::commerce::v2::{
     RemoveShippingRateFromOfferRequest, RemoveShippingRateFromOfferResponse,
     UpdateOfferRequest, UpdateOfferResponse,
 };
-use service_apis::sited_io::price::v1::{CurrencyCode, Price};
+use crate::api::sited_io::price::v1::{CurrencyCode, Price};
 
 use crate::common::auth::Auth;
 use crate::common::query;
+use crate::common::validate::validate_uuid;
 use crate::{CommerceRepository, Publisher};
 
 pub struct CommerceService {
@@ -82,6 +83,8 @@ impl commerce_service_server::CommerceService for CommerceService {
         request: Request<GetOfferRequest>,
     ) -> Result<Response<GetOfferResponse>, Status> {
         let GetOfferRequest { offer_id } = request.into_inner();
+
+        validate_uuid(&offer_id)?;
 
         let offer = self
             .repository

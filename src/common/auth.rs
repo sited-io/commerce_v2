@@ -50,7 +50,10 @@ impl Auth {
             .claims()
             .sub
             .clone()
-            .ok_or_else(|| Status::unauthenticated(""))
+            .ok_or_else(|| {
+                tracing::error!("claim 'sub' missing in token");
+                Status::unauthenticated("")
+            })
     }
 
     fn get_token(&self, metadata: &MetadataMap) -> Result<String, Status> {
@@ -59,6 +62,12 @@ impl Auth {
             .and_then(|v| v.to_str().ok())
             .and_then(|header_value| header_value.split_once(' '))
             .map(|(_, token)| token.to_string())
-            .ok_or_else(|| Status::unauthenticated(""))
+            .ok_or_else(|| {
+                tracing::error!(
+                    "{} header missing or malformed",
+                    AUTHORIZATION,
+                );
+                Status::unauthenticated("")
+            })
     }
 }
