@@ -3,3 +3,4 @@
 .env*
 run.sh
 src/prisma.rs
+.DS_Store
