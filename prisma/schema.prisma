@@ -14,14 +14,20 @@ model Offer {
   created_at DateTime @default(now()) @db.Timestamptz()
   updated_at DateTime @updatedAt @db.Timestamptz()
 
-  details        OfferDetails?
-  offer_type     OfferType?
-  price          OfferPrice?
-  shipping_rates ShippingRate[]
-  images         OfferImage[]
-  shops          Shop[]
+  offer_type    OfferTypeKey
+  details       OfferDetails?
+  price         OfferPrice?
+  shipping_rate OfferShippingRate?
+  images        OfferImage[]
+  files         OfferFile[]
+  shops         Shop[]
 
   @@map("offers")
+}
+
+enum OfferTypeKey {
+  PHYSICAL
+  DIGITAL
 }
 
 model OfferDetails {
@@ -35,44 +41,18 @@ model OfferDetails {
   @@map("offer_details")
 }
 
-model OfferType {
-  offer_id       String       @id @db.Uuid
-  owner          String
-  offer_type_key OfferTypeKey
-
-  offer Offer @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
-
-  @@map("offer_types")
-}
-
-enum OfferTypeKey {
-  PHYSICAL
-  DIGITAL
-}
-
 model OfferPrice {
   offer_id    String @id @db.Uuid
   owner       String
   unit_amount Int
   currency    String
 
-  price_type PriceType?
-  offer      Offer      @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
+  price_type           PriceTypeKey
+  price_type_recurring PriceRecurring?
+
+  offer Offer @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
 
   @@map("offer_prices")
-}
-
-model PriceType {
-  offer_id                    String       @id @db.Uuid
-  owner                       String
-  price_type_key              PriceTypeKey
-  recurring_interval          String?
-  recurring_interval_count    Int?
-  recurring_trial_period_days Int?
-
-  offer_price OfferPrice @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
-
-  @@map("price_types")
 }
 
 enum PriceTypeKey {
@@ -80,12 +60,22 @@ enum PriceTypeKey {
   RECURRING
 }
 
-model ShippingRate {
-  shipping_rate_id   String   @id @default(uuid()) @db.Uuid
-  offer_id           String   @db.Uuid
+model PriceRecurring {
+  offer_id          String @id @db.Uuid
+  interval          String
+  interval_count    Int
+  trial_period_days Int?
+
+  offer_price OfferPrice @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
+
+  @@map("price_recurring")
+}
+
+model OfferShippingRate {
+  offer_id           String   @id @db.Uuid
   owner              String
   created_at         DateTime @default(now()) @db.Timestamptz()
-  updated_at         DateTime @default(now()) @db.Timestamptz()
+  updated_at         DateTime @updatedAt @db.Timestamptz()
   unit_amount        Int
   currency           String
   all_countries      Boolean
@@ -93,22 +83,48 @@ model ShippingRate {
 
   offer Offer @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
 
-  @@map("shipping_rates")
+  @@map("offer_shipping_rates")
 }
 
 model OfferImage {
   offer_image_id String   @id @default(uuid()) @db.Uuid
   offer_id       String   @db.Uuid
-  file_id        String   @db.Uuid
   owner          String
   created_at     DateTime @default(now()) @db.Timestamptz()
-  updated_at     DateTime @default(now()) @db.Timestamptz()
+  updated_at     DateTime @updatedAt @db.Timestamptz()
+  image_url      String
   ordering       Int
 
-  file  SubFile @relation(fields: [file_id], references: [file_id], onDelete: Cascade)
-  offer Offer   @relation(fields: [offer_id], references: [offer_id], onDelete: Cascade)
+  offer Offer @relation(fields: [offer_id], references: [offer_id], onDelete: Restrict)
 
   @@map("offer_images")
+}
+
+model OfferFile {
+  offer_file_id       String   @id @default(uuid()) @db.Uuid
+  offer_id            String   @db.Uuid
+  owner               String
+  created_at          DateTime @default(now()) @db.Timestamptz()
+  updated_at          DateTime @updatedAt @db.Timestamptz()
+  file_name           String
+  content_type        String?
+  total_size_bytes    BigInt
+  uploaded_size_bytes BigInt
+  file_path           String
+  file_url            String
+  ordering            Int
+
+  offer Offer @relation(fields: [offer_id], references: [offer_id], onDelete: Restrict)
+
+  @@map("offer_files")
+}
+
+model UserQuota {
+  user_id                String @id @db.Uuid
+  max_allowed_size_bytes BigInt
+  uploaded_size_bytes    BigInt @default(0)
+
+  @@map("user_quotas")
 }
 
 model Shop {
@@ -123,19 +139,102 @@ model Shop {
   @@map("shops")
 }
 
-model SubFile {
-  file_id      String         @id @default(uuid()) @db.Uuid
-  owner        String
-  content_type ContentTypeKey
-  file_name    String
-  file_url     String?
+model Order {
+  order_id      String   @id @default(uuid()) @db.Uuid
+  buyer_user_id String
+  offer_id      String   @db.Uuid
+  created_at    DateTime @default(now()) @db.Timestamptz()
+  updated_at    DateTime @updatedAt @db.Timestamptz()
 
-  offer_images OfferImage[]
+  order_type              OrderTypeKey
+  order_type_one_off      OrderTypeOneOff?
+  order_type_subscription OrderTypeSubscription?
+  payment_method          PaymentMethodKey
+  payment_method_stripe   PaymentMethodStripe?
 
-  @@map("sub_files")
+  @@map("orders")
 }
 
-enum ContentTypeKey {
-  UNSPECIFIED
-  IMAGE
+enum OrderTypeKey {
+  ONE_OFF
+  SUBSCRIPTION
+}
+
+model OrderTypeOneOff {
+  order_id String    @id @db.Uuid
+  payed_at DateTime? @db.Timestamptz()
+
+  order Order @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+
+  @@map("order_type_one_off")
+}
+
+model OrderTypeSubscription {
+  order_id             String    @id @db.Uuid
+  current_period_start DateTime  @db.Timestamptz()
+  current_period_end   DateTime  @db.Timestamptz()
+  status               String
+  payed_at             DateTime? @db.Timestamptz()
+  payed_untill         DateTime? @db.Timestamptz()
+  cancelled_at         DateTime? @db.Timestamptz()
+  cancel_at            DateTime? @db.Timestamptz()
+
+  order Order @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+
+  @@map("order_type_subscription")
+}
+
+enum PaymentMethodKey {
+  STRIPE
+}
+
+model PaymentMethodStripe {
+  order_id               String  @id @db.Uuid
+  stripe_subscription_id String?
+
+  order Order @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+
+  @@map("payment_method_stripe")
+}
+
+model StripeAccount {
+  stripe_account_id String                         @id
+  website_id        String                         @unique
+  owner             String
+  status            StripeAccountStatus
+  status_pending    StripeAccountStatusPending?
+  status_configured StripeAccountStatusConfigured?
+
+  @@map("stripe_accounts")
+}
+
+enum StripeAccountStatus {
+  PENDING
+  CONFIGURED
+}
+
+model StripeAccountStatusPending {
+  stripe_account_id String @id
+  link              String
+
+  stripe_account StripeAccount @relation(fields: [stripe_account_id], references: [stripe_account_id], onDelete: Cascade)
+
+  @@map("stripe_account_status_pending")
+}
+
+model StripeAccountStatusConfigured {
+  stripe_account_id String  @id
+  charges_enabled   Boolean
+  details_submitted Boolean
+
+  stripe_account StripeAccount @relation(fields: [stripe_account_id], references: [stripe_account_id], onDelete: Cascade)
+
+  @@map("stripe_account_status_configured")
+}
+
+model SubWebiste {
+  website_id String @id
+  owner      String
+
+  @@map("sub_websites")
 }

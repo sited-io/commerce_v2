@@ -7,26 +7,58 @@ edition = "2021"
 members = [".", "prisma-cli"]
 
 [dependencies]
-async-nats = { version = "0.37.0", default-features = false, features = ["ring"] }
+async-nats = { version = "0.37.0", default-features = false, features = [
+    "ring",
+] }
+async-stripe = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
+async-stripe-checkout = { git = "https://github.com/arlyon/async-stripe", branch = "next", features = [
+    "checkout_session",
+] }
+async-stripe-connect = { git = "https://github.com/arlyon/async-stripe", branch = "next", features = [
+    "account",
+    "account_link",
+] }
+async-stripe-types = { git = "https://github.com/arlyon/async-stripe", branch = "next" }
+async-stripe-billing = { git = "https://github.com/arlyon/async-stripe", branch = "next", features = [
+    "subscription",
+] }
+aws-config = { version = "1.5.10", default-features = false, features = [
+    "rt-tokio",
+] }
+aws-credential-types = { version = "1.2.1", default-features = false }
+aws-sdk-s3 = { version = "1.60.0", default-features = false, features = [
+    "rt-tokio",
+    "rustls",
+] }
+futures = { version = "0.3.31", default-features = false }
 http = { version = "1.1.0", default-features = false }
+image = { version = "0.25.5", default-features = false, features = [
+    "jpeg",
+    "png",
+    "webp",
+] }
+infer = { version = "0.16.0", default-features = false }
 jwtk = { git = "https://github.com/blckngm/jwtk.git", version = "0.3.0" }
 prost = { version = "0.13.3", default-features = false }
 reqwest = { version = "0.12.8", default-features = false }
 serde = { version = "1.0.210", default-features = false }
 tokio = { version = "1.40.0", features = ["rt-multi-thread", "macros"] }
 tonic = "0.12.3"
-tonic-reflection = "0.12.3"
 tonic-web = "0.12.3"
 tower-http = { version = "0.6.1", features = ["cors", "trace"] }
 tracing = { version = "0.1.40", features = ["log"] }
 tracing-subscriber = "0.3.18"
+uuid = { version = "1.11.0", default-features = false, features = ["v4"] }
+webp = { version = "0.3.0", default-features = false, features = ["img"] }
 
 [dependencies.prisma-client-rust]
-git = "https://github.com/Brendonovich/prisma-client-rust"
+# git = "https://github.com/Maxi-Teme/prisma-client-rust.git"
+# branch = "main"
+git = "https://github.com/Brendonovich/prisma-client-rust.git"
 tag = "0.6.11"
 default-features = false
 features = ["postgresql"]
 
 [dependencies.service-apis]
-path = "/home/nedrise/Work/Sited.io/Libraries/service-apis/rust"
-features = ["sited_io-commerce-v2"]
+path = "/Users/maxi/Work/Sited.io/Libraries/service-apis/gen/rust"
+features = ["sited_io-commerce-v2", "sited_io-websites-v1"]

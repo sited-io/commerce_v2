@@ -1,6 +1,6 @@
 use tonic::Status;
 
-use service_apis::sited_io::query::v1::{
+use service_apis::sited_io::types::query::v1::{
     PaginationRequest, PaginationResponse,
 };
 

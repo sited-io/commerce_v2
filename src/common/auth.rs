@@ -20,7 +20,7 @@ pub struct Auth {
 }
 
 impl Auth {
-    pub fn new(jwks_host: &str, jwks_url: &String) -> Self {
+    pub fn new(jwks_host: &str, jwks_url: &str) -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(HOST, HeaderValue::from_str(jwks_host).unwrap());
         let client = reqwest::Client::builder()
