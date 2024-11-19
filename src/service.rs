@@ -18,6 +18,7 @@ use crate::prisma::{
 use crate::{prisma, CommerceRepository, FileService, StripeService};
 
 const STRIPE_METHADATA_OFFER_ID_KEY: &str = "offer_id";
+const S3_MIN_PART_SIZE_BYTES: u64 = 5242880;
 
 pub struct CommerceService {
     auth: Auth,
@@ -56,6 +57,8 @@ impl CommerceService {
             default_platform_fee_percent,
             default_minimum_platform_fee_cent,
         })
+        .max_encoding_message_size(10000000) // 10 MB
+        .max_decoding_message_size(10000000) // 10 MB
     }
 
     async fn check_offer_owner(
@@ -70,6 +73,24 @@ impl CommerceService {
             .ok_or_else(|| Status::not_found(""))?;
         if offer.owner == *owner {
             Ok(offer)
+        } else {
+            Err(Status::not_found(""))
+        }
+    }
+
+    async fn check_offer_image_owner(
+        &self,
+        offer_image_id: &str,
+        owner: &str,
+    ) -> Result<prisma::offer_image::Data, Status> {
+        let offer_image = self
+            .repository
+            .get_offer_image(offer_image_id)
+            .await?
+            .ok_or_else(|| Status::not_found(""))?;
+
+        if offer_image.owner == *owner {
+            Ok(offer_image)
         } else {
             Err(Status::not_found(""))
         }
@@ -194,7 +215,7 @@ impl CommerceService {
         offer_image_id: &impl Display,
     ) -> String {
         // /{user_id}/offers/{offer_id}/{offer_image_id}
-        format!("/{}/offers/{}/{}", user_id, offer_id, offer_image_id)
+        format!("{}/offers/{}/{}", user_id, offer_id, offer_image_id)
     }
 
     fn build_file_path(
@@ -205,7 +226,7 @@ impl CommerceService {
     ) -> String {
         // /{user_id}/offers/{offer_id}/files/{offer_file_id}/{file_name}
         format!(
-            "/{}/offers/{}/files/{}/{}",
+            "{}/offers/{}/files/{}/{}",
             user_id, offer_id, offer_file_id, file_name
         )
     }
@@ -359,6 +380,16 @@ impl commerce_service_server::CommerceService for CommerceService {
 
         let DeleteOfferRequest { offer_id } = request.into_inner();
 
+        let images = self.repository.list_offer_images(&offer_id).await?;
+        if !images.is_empty() {
+            return Err(Status::failed_precondition(format!("Offer '{}' has still images assigned. Please remove all images first.", offer_id)));
+        }
+
+        let files = self.repository.list_files_by_offer(&offer_id).await?;
+        if !files.is_empty() {
+            return Err(Status::failed_precondition(format!("Offer '{}' has still files assigned. Please remove all files first.", offer_id)));
+        }
+
         self.repository.delete_offer(&offer_id, &user_id).await?;
 
         Ok(Response::new(DeleteOfferResponse {}))
@@ -376,12 +407,13 @@ impl commerce_service_server::CommerceService for CommerceService {
             price_type,
             currency,
         } = request.into_inner();
+
+        self.check_offer_owner(&offer_id, &user_id).await?;
+
         let currency = CurrencyCode::try_from(currency).unwrap();
 
         let (unit_amount, price_type) =
             self.validate_price(unit_amount, currency, price_type)?;
-
-        self.check_offer_owner(&offer_id, &user_id).await?;
 
         self.repository
             .upsert_price(
@@ -437,8 +469,8 @@ impl commerce_service_server::CommerceService for CommerceService {
 
         self.repository
             .upsert_offer_shipping_rate(
-                &user_id,
                 &offer_id,
+                &user_id,
                 unit_amount,
                 currency.as_str_name(),
                 all_countries,
@@ -508,6 +540,27 @@ impl commerce_service_server::CommerceService for CommerceService {
         Ok(Response::new(AddImageToOfferResponse {}))
     }
 
+    async fn update_image_ordering(
+        &self,
+        request: Request<UpdateImageOrderingRequest>,
+    ) -> Result<Response<UpdateImageOrderingResponse>, Status> {
+        let user_id = self.auth.get_user_id(&request).await?;
+
+        let UpdateImageOrderingRequest {
+            offer_image_id,
+            ordering,
+        } = request.into_inner();
+
+        self.check_offer_image_owner(&offer_image_id, &user_id)
+            .await?;
+
+        self.repository
+            .update_offer_image_ordering(&offer_image_id, ordering)
+            .await?;
+
+        Ok(Response::new(UpdateImageOrderingResponse {}))
+    }
+
     async fn remove_image_from_offer(
         &self,
         request: Request<RemoveImageFromOfferRequest>,
@@ -559,7 +612,7 @@ impl commerce_service_server::CommerceService for CommerceService {
         let offer = self.check_offer_owner(&offer_id, &user_id).await?;
         self.check_quota(&user_id, content.len()).await?;
 
-        let all_files = self.repository.list_offer_files(&user_id).await?;
+        let all_files = self.repository.list_files_by_owner(&user_id).await?;
 
         let offer_file_id = Uuid::new_v4();
 
@@ -617,12 +670,18 @@ impl commerce_service_server::CommerceService for CommerceService {
             ordering,
         } = request.into_inner();
 
+        if total_size_bytes <= S3_MIN_PART_SIZE_BYTES {
+            return Err(Status::invalid_argument(
+                "total_size_bytes must be larger than 5MiB",
+            ));
+        }
+
         let offer = self.check_offer_owner(&offer_id, &user_id).await?;
 
         self.check_quota(&user_id, total_size_bytes as usize)
             .await?;
 
-        let all_files = self.repository.list_offer_files(&user_id).await?;
+        let all_files = self.repository.list_files_by_owner(&user_id).await?;
 
         let offer_file_id = Uuid::new_v4();
 
@@ -658,10 +717,7 @@ impl commerce_service_server::CommerceService for CommerceService {
 
                 let upload_id = self
                     .file_service
-                    .initiate_multipart_upload(
-                        &file_path,
-                        content_type.as_ref(),
-                    )
+                    .create_multipart_upload(&file_path, content_type.as_ref())
                     .await?;
 
                 Ok((offer_file, upload_id))
@@ -695,28 +751,16 @@ impl commerce_service_server::CommerceService for CommerceService {
         let uploaded_size_bytes =
             chunk.len() + offer_file.uploaded_size_bytes as usize;
 
+        self.repository
+            .update_offer_file_size(
+                &offer_file.offer_file_id,
+                uploaded_size_bytes,
+            )
+            .await?;
+
         let etag = self
-            .repository
-            .transaction(|client| async move {
-                CommerceRepository::update_offer_file_size(
-                    &client,
-                    &offer_file.offer_file_id,
-                    uploaded_size_bytes,
-                )
-                .await?;
-
-                let etag = self
-                    .file_service
-                    .put_multipart_chunk(
-                        &offer_file.file_url,
-                        &upload_id,
-                        part_number,
-                        &chunk,
-                    )
-                    .await?;
-
-                Ok(etag)
-            })
+            .file_service
+            .upload_part(&offer_file.file_path, &upload_id, part_number, &chunk)
             .await?;
 
         Ok(Response::new(PutMultipartChunkResponse {
@@ -757,7 +801,7 @@ impl commerce_service_server::CommerceService for CommerceService {
             .collect();
 
         self.file_service
-            .complete_multipart_upload(&offer_file.file_url, &upload_id, parts)
+            .complete_multipart_upload(&offer_file.file_path, &upload_id, parts)
             .await?;
 
         Ok(Response::new(CompleteMultipartUploadResponse {}))
@@ -785,13 +829,13 @@ impl commerce_service_server::CommerceService for CommerceService {
         Ok(Response::new(DownloadFileResponse { download_url }))
     }
 
-    async fn update_file_offer_ordering(
+    async fn update_file_ordering(
         &self,
-        request: Request<UpdateFileOfferOrderingRequest>,
-    ) -> Result<Response<UpdateFileOfferOrderingResponse>, Status> {
+        request: Request<UpdateFileOrderingRequest>,
+    ) -> Result<Response<UpdateFileOrderingResponse>, Status> {
         let user_id = self.auth.get_user_id(&request).await?;
 
-        let UpdateFileOfferOrderingRequest {
+        let UpdateFileOrderingRequest {
             offer_file_id,
             ordering,
         } = request.into_inner();
@@ -803,7 +847,7 @@ impl commerce_service_server::CommerceService for CommerceService {
             .update_offer_file_ordering(&offer_file_id, ordering)
             .await?;
 
-        Ok(Response::new(UpdateFileOfferOrderingResponse {}))
+        Ok(Response::new(UpdateFileOrderingResponse {}))
     }
 
     async fn remove_file_from_offer(

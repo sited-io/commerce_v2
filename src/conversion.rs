@@ -33,6 +33,22 @@ use crate::prisma::{
 
 impl From<offer::Data> for Offer {
     fn from(value: offer::Data) -> Self {
+        let mut images: Vec<OfferImage> = value
+            .images
+            .unwrap_or_default()
+            .into_iter()
+            .map(OfferImage::from)
+            .collect();
+        images.sort_by(|a, b| a.ordering.cmp(&b.ordering));
+
+        let mut files: Vec<OfferFile> = value
+            .files
+            .unwrap_or_default()
+            .into_iter()
+            .map(OfferFile::from)
+            .collect();
+        files.sort_by(|a, b| a.ordering.cmp(&b.ordering));
+
         Self {
             offer_id: value.offer_id,
             owner: value.owner,
@@ -45,18 +61,8 @@ impl From<offer::Data> for Offer {
                 .shipping_rate
                 .flatten()
                 .map(ShippingRate::from),
-            images: value
-                .images
-                .unwrap_or_default()
-                .into_iter()
-                .map(OfferImage::from)
-                .collect(),
-            files: value
-                .files
-                .unwrap_or_default()
-                .into_iter()
-                .map(OfferFile::from)
-                .collect(),
+            images,
+            files,
         }
     }
 }

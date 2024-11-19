@@ -240,6 +240,7 @@ impl CommerceRepository {
                 vec![
                     offer_price::unit_amount::set(unit_amount),
                     offer_price::currency::set(currency.to_owned()),
+                    offer_price::price_type::set(price_type.to_owned().into()),
                 ],
             )
             .exec()
@@ -250,9 +251,9 @@ impl CommerceRepository {
                 PriceTypeKind::OneTime(_) => {
                     self.db
                         .price_recurring()
-                        .delete(price_recurring::offer_id::equals(
+                        .delete_many(vec![price_recurring::offer_id::equals(
                             offer_id.to_owned(),
-                        ))
+                        )])
                         .exec()
                         .await?;
                 }
@@ -373,6 +374,49 @@ impl CommerceRepository {
             .await?)
     }
 
+    pub async fn get_offer_image(
+        &self,
+        offer_image_id: &str,
+    ) -> Result<Option<offer_image::Data>, Error> {
+        Ok(self
+            .db
+            .offer_image()
+            .find_unique(offer_image::offer_image_id::equals(
+                offer_image_id.to_owned(),
+            ))
+            .exec()
+            .await?)
+    }
+
+    pub async fn list_offer_images(
+        &self,
+        offer_id: &str,
+    ) -> Result<Vec<offer_image::Data>, Error> {
+        Ok(self
+            .db
+            .offer_image()
+            .find_many(vec![offer_image::offer_id::equals(offer_id.to_owned())])
+            .exec()
+            .await?)
+    }
+
+    pub async fn update_offer_image_ordering(
+        &self,
+        offer_image_id: &str,
+        ordering: i32,
+    ) -> Result<(), Error> {
+        self.db
+            .offer_image()
+            .update(
+                offer_image::offer_image_id::equals(offer_image_id.to_owned()),
+                vec![offer_image::ordering::set(ordering)],
+            )
+            .exec()
+            .await?;
+
+        Ok(())
+    }
+
     pub async fn delete_offer_image(
         client: &PrismaClient,
         offer_image_id: &str,
@@ -454,12 +498,40 @@ impl CommerceRepository {
             .await?)
     }
 
+    pub async fn list_files_by_offer(
+        &self,
+        offer_id: &str,
+    ) -> Result<Vec<offer_file::Data>, Error> {
+        Ok(self
+            .db
+            .offer_file()
+            .find_many(vec![offer_file::offer_id::equals(offer_id.to_owned())])
+            .exec()
+            .await?)
+    }
+
+    pub async fn list_files_by_owner(
+        &self,
+        owner: &str,
+    ) -> Result<Vec<offer_file::Data>, Error> {
+        Ok(self
+            .db
+            .offer_file()
+            .find_many(vec![offer_file::owner::equals(owner.to_owned())])
+            .order_by(offer_file::OrderByParam::Ordering(
+                prisma_client_rust::Direction::Asc,
+            ))
+            .exec()
+            .await?)
+    }
+
     pub async fn update_offer_file_size(
-        client: &PrismaClient,
+        &self,
         offer_file_id: &str,
         uploaded_size_bytes: usize,
     ) -> Result<offer_file::Data, Error> {
-        Ok(client
+        Ok(self
+            .db
             .offer_file()
             .update(
                 offer_file::offer_file_id::equals(offer_file_id.to_owned()),
@@ -486,21 +558,6 @@ impl CommerceRepository {
             .await?;
 
         Ok(())
-    }
-
-    pub async fn list_offer_files(
-        &self,
-        owner: &str,
-    ) -> Result<Vec<offer_file::Data>, Error> {
-        Ok(self
-            .db
-            .offer_file()
-            .find_many(vec![offer_file::owner::equals(owner.to_owned())])
-            .order_by(offer_file::OrderByParam::Ordering(
-                prisma_client_rust::Direction::Asc,
-            ))
-            .exec()
-            .await?)
     }
 
     pub async fn delete_offer_file(

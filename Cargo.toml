@@ -62,3 +62,13 @@ features = ["postgresql"]
 [dependencies.service-apis]
 path = "/Users/maxi/Work/Sited.io/Libraries/service-apis/gen/rust"
 features = ["sited_io-commerce-v2", "sited_io-websites-v1"]
+
+[dev-dependencies]
+rand = "0.8.5"
+reqwest = "0.12.8"
+serde = "1.0.210"
+serde_json = "1.0.133"
+
+[dev-dependencies.service-apis]
+path = "/Users/maxi/Work/Sited.io/Libraries/service-apis/gen/rust"
+features = ["sited_io-commerce-v2"]

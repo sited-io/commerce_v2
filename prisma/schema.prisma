@@ -120,7 +120,7 @@ model OfferFile {
 }
 
 model UserQuota {
-  user_id                String @id @db.Uuid
+  user_id                String @id
   max_allowed_size_bytes BigInt
   uploaded_size_bytes    BigInt @default(0)
 

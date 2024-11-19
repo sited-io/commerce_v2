@@ -116,16 +116,16 @@ impl FileService {
     }
 
     /// Returns `upload_id`
-    pub async fn initiate_multipart_upload(
+    pub async fn create_multipart_upload(
         &self,
-        file_path: &str,
+        key: &str,
         content_type: Option<&String>,
     ) -> Result<String, Status> {
         let mut req = self
             .client
             .create_multipart_upload()
             .bucket(&self.bucket_name)
-            .key(file_path);
+            .key(key);
 
         if let Some(content_type) = content_type {
             req = req.content_type(content_type);
@@ -133,7 +133,7 @@ impl FileService {
 
         let response = req.send().await.map_err(|err| {
             tracing::log::error!(
-                "[FileService.initiate_multipart_upload]: {err}"
+                "[FileService.create_multipart_upload]: {err}"
             );
             Status::internal("")
         })?;
@@ -146,9 +146,9 @@ impl FileService {
     }
 
     /// Returns `e_tag`
-    pub async fn put_multipart_chunk(
+    pub async fn upload_part(
         &self,
-        file_path: &str,
+        key: &str,
         upload_id: &str,
         part_number: i32,
         file_data: &[u8],
@@ -157,7 +157,7 @@ impl FileService {
             .client
             .upload_part()
             .bucket(&self.bucket_name)
-            .key(file_path)
+            .key(key)
             .upload_id(upload_id)
             .part_number(part_number)
             .body(ByteStream::from(file_data.to_vec()))
@@ -165,7 +165,9 @@ impl FileService {
             .await
             .map_err(|err| {
                 tracing::log::error!(
-                    "[FileService.put_multipart_chunk]: {err}"
+                    "[FileService.upload_part]: {:?} {:?}",
+                    err.as_service_error(),
+                    err.raw_response(),
                 );
                 Status::internal("")
             })?;
@@ -175,7 +177,7 @@ impl FileService {
 
     pub async fn complete_multipart_upload(
         &self,
-        file_path: &str,
+        key: &str,
         upload_id: &str,
         parts: Vec<CompletedPart>,
     ) -> Result<(), Status> {
@@ -186,14 +188,16 @@ impl FileService {
         self.client
             .complete_multipart_upload()
             .bucket(&self.bucket_name)
-            .key(file_path)
+            .key(key)
             .upload_id(upload_id)
             .multipart_upload(completed_multipart_upload)
             .send()
             .await
             .map_err(|err| {
                 tracing::log::error!(
-                    "[FileService.complete_multipart_upload]: {err}"
+                    "[FileService.complete_multipart_upload]: {:?} {:?}",
+                    err.as_service_error(),
+                    err.raw_response()
                 );
                 Status::internal("")
             })?;
