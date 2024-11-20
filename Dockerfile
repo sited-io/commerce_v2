@@ -41,4 +41,4 @@ RUN adduser \
 # Use an unprivileged user.
 USER ${USER}:${USER}
 
-ENTRYPOINT ["commerce_v2"]
+ENTRYPOINT ["/app/commerce_v2"]
