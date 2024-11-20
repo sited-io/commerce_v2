@@ -4081,6 +4081,7 @@ dependencies = [
 [[package]]
 name = "service-apis"
 version = "0.1.0"
+source = "git+https://github.com/sited-io/service-apis.git#ac068023f1f06b199aed6b795829d733aa9f845d"
 dependencies = [
  "prost",
  "tonic",

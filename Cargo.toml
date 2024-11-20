@@ -52,15 +52,13 @@ uuid = { version = "1.11.0", default-features = false, features = ["v4"] }
 webp = { version = "0.3.0", default-features = false, features = ["img"] }
 
 [dependencies.prisma-client-rust]
-# git = "https://github.com/Maxi-Teme/prisma-client-rust.git"
-# branch = "main"
 git = "https://github.com/Brendonovich/prisma-client-rust.git"
 tag = "0.6.11"
 default-features = false
 features = ["postgresql"]
 
 [dependencies.service-apis]
-path = "/Users/maxi/Work/Sited.io/Libraries/service-apis/gen/rust"
+git = "https://github.com/sited-io/service-apis.git"
 features = ["sited_io-commerce-v2", "sited_io-websites-v1"]
 
 [dev-dependencies]
@@ -70,5 +68,5 @@ serde = "1.0.210"
 serde_json = "1.0.133"
 
 [dev-dependencies.service-apis]
-path = "/Users/maxi/Work/Sited.io/Libraries/service-apis/gen/rust"
+git = "https://github.com/sited-io/service-apis.git"
 features = ["sited_io-commerce-v2"]
