@@ -17,12 +17,12 @@ RUN cargo build --release
 
 RUN strip target/release/commerce_v2
 
-FROM alpine:latest AS release
+FROM debian:bookworm-slim AS release
 WORKDIR /app
 
 COPY --from=builder /app/target/release/commerce_v2 .
 
-RUN apk --no-cache add ca-certificates
+RUN apt update && apt install -y --no-install-recommends ca-certificates adduser
 RUN update-ca-certificates
 
 # Create appuser
@@ -41,4 +41,4 @@ RUN adduser \
 # Use an unprivileged user.
 USER ${USER}:${USER}
 
-ENTRYPOINT ["/app/commerce_v2"]
+ENTRYPOINT [ "./commerce_v2" ]
