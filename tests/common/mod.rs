@@ -19,11 +19,12 @@ use commerce_v2::common::get_env_var_str;
 pub async fn setup() -> (TestContext, CommerceServiceClient<Channel>) {
     tracing_subscriber::fmt::init();
 
+    let commerce_url = get_env_var_str("TEST_COMMERCE_URL");
+    tracing::info!("Runnning integration test against: {}", commerce_url);
+
     (
         TestContext::from_env(),
-        CommerceServiceClient::connect(get_env_var_str("TEST_COMMERCE_URL"))
-            .await
-            .unwrap(),
+        CommerceServiceClient::connect(commerce_url).await.unwrap(),
     )
 }
 
