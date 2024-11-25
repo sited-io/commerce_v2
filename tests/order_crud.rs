@@ -1,4 +1,6 @@
-use service_apis::sited_io::commerce::v2::GetOrderRequest;
+use service_apis::sited_io::commerce::v2::{
+    GetOrderRequest, ListOrdersRequest,
+};
 
 mod common;
 
@@ -7,17 +9,14 @@ async fn order_crud_test() {
     let (mut ctx, mut commerce_client) = common::setup().await;
 
     let req = ctx
-        .owner_auth_req(GetOrderRequest {
-            order_id: "e3cdbd05-688d-4f7f-99cb-3a2397057feb".to_string(),
-        })
+        .owner_auth_req(ListOrdersRequest { offer_id: None })
         .await;
-    let order = commerce_client
-        .get_order(req)
+    let orders = commerce_client
+        .list_orders(req)
         .await
         .unwrap()
         .into_inner()
-        .order
-        .unwrap();
+        .orders;
 
-    tracing::info!("{:?}", order);
+    tracing::info!("{:?}", orders);
 }
