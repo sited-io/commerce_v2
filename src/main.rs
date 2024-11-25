@@ -6,8 +6,9 @@ use commerce_v2::common::{
     get_env_var_int, get_env_var_str, init_cors_layer, init_trace_layer,
 };
 use commerce_v2::prisma::new_client_with_url;
+use commerce_v2::subscribers;
 use commerce_v2::{
-    CommerceRepository, CommerceService, FileService, StripeService, Subscriber,
+    CommerceRepository, CommerceService, FileService, StripeService,
 };
 
 #[tokio::main]
@@ -65,7 +66,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     // initialize website subscriber
-    let subscriber = Subscriber::new(nats_client, repository.clone());
+    let website_subscriber = subscribers::WebsiteSubscriber::new(
+        nats_client.clone(),
+        repository.clone(),
+    );
+
+    // initialize payment subscriber
+    let payment_subscriber =
+        subscribers::PaymentSubscriber::new(nats_client, repository.clone());
 
     // initialize gRPC service
     let service = CommerceService::init(
@@ -83,10 +91,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let trace_layer = init_trace_layer();
     let cors_layer = init_cors_layer();
 
-    let (subscriber_task, server_task) = tokio::join!(
+    let (website_subscriber_task, payment_subscriber_task, server_task) = tokio::join!(
         tokio::spawn(async move {
             tracing::log::info!("NATS subscriber listening");
-            subscriber.subscribe().await
+            website_subscriber.subscribe().await
+        }),
+        tokio::spawn(async move {
+            tracing::log::info!("PaymentSubscriber listening");
+            payment_subscriber.subscribe().await
         }),
         tokio::spawn(async move {
             tracing::log::info!("gRPC+web server listening on {}", host);
@@ -100,7 +112,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
     );
 
-    subscriber_task?;
+    website_subscriber_task?;
+    payment_subscriber_task?;
     server_task??;
 
     Ok(())

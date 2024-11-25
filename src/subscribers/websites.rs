@@ -4,12 +4,12 @@ use service_apis::sited_io::websites::v1::WebsiteResponse;
 
 use crate::{CommerceRepository, Error};
 
-pub struct Subscriber {
+pub struct WebsiteSubscriber {
     nats_client: async_nats::Client,
     repository: CommerceRepository,
 }
 
-impl Subscriber {
+impl WebsiteSubscriber {
     pub fn new(
         nats_client: async_nats::Client,
         repository: CommerceRepository,
@@ -25,7 +25,7 @@ impl Subscriber {
             .nats_client
             .queue_subscribe(
                 "websites.website.>",
-                "websites.website".to_string(),
+                "commerce_v2.websites".to_string(),
             )
             .await
             .unwrap();
@@ -53,7 +53,7 @@ impl Subscriber {
                     action
                 )))
             } {
-                tracing::error!("[Subscriber::subscrbe] {:?}", err)
+                tracing::error!("[WebsiteSubscriber::subscrbe] {:?}", err)
             }
         }
     }

@@ -12,12 +12,12 @@ use service_apis::sited_io::types::currency::v1::CurrencyCode;
 use crate::common::auth::Auth;
 use crate::common::query;
 use crate::prisma::{
-    offer, sub_webiste, OfferTypeKey, OrderTypeKey, PaymentMethodKey,
+    offer, sub_webiste, OrderTypeKey, PaymentMethodKey, PriceTypeKey,
     StripeAccountStatus,
 };
 use crate::{prisma, CommerceRepository, FileService, StripeService};
 
-const STRIPE_METHADATA_OFFER_ID_KEY: &str = "offer_id";
+const STRIPE_METHADATA_ORDER_ID_KEY: &str = "order_id";
 const S3_MIN_PART_SIZE_BYTES: u64 = 5242880;
 
 pub struct CommerceService {
@@ -32,10 +32,6 @@ pub struct CommerceService {
 }
 
 impl CommerceService {
-    fn metadata_key_user_id() -> String {
-        String::from("user_id")
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub fn init(
         auth: Auth,
@@ -972,26 +968,37 @@ impl commerce_service_server::CommerceService for CommerceService {
             .await?
             .ok_or_else(|| Status::not_found(""))?;
 
-        if order.buyer_user_id != user_id {
-            return Err(Status::not_found(""));
-        }
+        let offer = self
+            .repository
+            .get_offer(&order.offer_id)
+            .await?
+            .ok_or_else(|| Status::not_found(""))?;
 
-        Ok(Response::new(GetOrderResponse {
-            order: Some(Order::from(order)),
-        }))
+        if offer.owner == user_id
+            || order
+                .buyer_user_id
+                .as_ref()
+                .is_some_and(|id| *id == user_id)
+        {
+            Ok(Response::new(GetOrderResponse {
+                order: Some(Order::from(order)),
+            }))
+        } else {
+            Err(Status::not_found(""))
+        }
     }
 
     async fn list_orders(
         &self,
         request: Request<ListOrdersRequest>,
     ) -> Result<Response<ListOrdersResponse>, Status> {
-        let user_id = self.auth.get_user_id(&request).await?;
+        let user_id = self.auth.get_user_id(&request).await.ok();
 
         let ListOrdersRequest { offer_id } = request.into_inner();
 
         let orders = self
             .repository
-            .list_orders(&user_id, offer_id.as_ref())
+            .list_orders(user_id.as_ref(), offer_id.as_ref())
             .await?;
 
         Ok(Response::new(ListOrdersResponse {
@@ -1012,6 +1019,11 @@ impl commerce_service_server::CommerceService for CommerceService {
         } = request.into_inner();
 
         self.check_website_owner(&user_id, &website_id).await?;
+        if refresh_url.is_empty() || return_url.is_empty() {
+            return Err(Status::invalid_argument(
+                "neither refresh_url nor return_url can be empty",
+            ));
+        }
 
         match self
             .repository
@@ -1171,34 +1183,10 @@ impl commerce_service_server::CommerceService for CommerceService {
             ))
         })?;
 
-        let stripe_account = self
-            .repository
-            .get_stripe_account(&shop.website_id)
-            .await?
-            .ok_or_else(|| {
-                Status::not_found(format!(
-                    "Could not find stripe account by website_id '{}'",
-                    shop.website_id
-                ))
-            })?;
-
-        // Add offer_id to metadata of stripe checkout session
-        // this is used in stripe webhook handler to assign offers to payments
-        let mut metadata = HashMap::from([(
-            STRIPE_METHADATA_OFFER_ID_KEY.to_owned(),
-            offer_id,
-        )]);
-
-        if let OfferTypeKey::Digital = offer.offer_type {
-            // If offer type is digital, we need to provide the user_id to the payment
-            // in order to assing ownership of the subscription to the buyer.
-            // In other cases customers should be able to buy without authentication.
-            if let Some(user_id) = user_id {
-                metadata.insert(Self::metadata_key_user_id(), user_id);
-            } else {
-                return Err(Status::unauthenticated(""));
-            }
-        }
+        let order_type_key = match price.price_type {
+            PriceTypeKey::OneTime => OrderTypeKey::OneOff,
+            PriceTypeKey::Recurring => OrderTypeKey::Subscription,
+        };
 
         match payment_method {
             buy_offer_request::PaymentMethod::Stripe(
@@ -1207,6 +1195,33 @@ impl commerce_service_server::CommerceService for CommerceService {
                     cancel_url,
                 },
             ) => {
+                let order = self
+                    .repository
+                    .create_order(
+                        &offer_id,
+                        user_id.as_ref(),
+                        order_type_key,
+                        PaymentMethodKey::Stripe,
+                    )
+                    .await?;
+
+                // Add order_id to metadata so we can assign payments to it later
+                let metadata = HashMap::from([(
+                    STRIPE_METHADATA_ORDER_ID_KEY.to_string(),
+                    order.order_id,
+                )]);
+
+                let stripe_account = self
+                    .repository
+                    .get_stripe_account(&shop.website_id)
+                    .await?
+                    .ok_or_else(|| {
+                        Status::not_found(format!(
+                            "Could not find stripe account by website_id '{}'",
+                            shop.website_id
+                        ))
+                    })?;
+
                 let link = self
                     .stripe_service
                     .create_checkout_session(
@@ -1248,7 +1263,7 @@ impl commerce_service_server::CommerceService for CommerceService {
                 ))
             })?;
 
-        if order.buyer_user_id != user_id {
+        if order.buyer_user_id.as_ref().is_none_or(|id| *id != user_id) {
             return Err(Status::not_found(format!(
                 "Could not find order by order_id '{}'",
                 order_id
@@ -1313,7 +1328,7 @@ impl commerce_service_server::CommerceService for CommerceService {
                 ))
             })?;
 
-        if order.buyer_user_id != user_id {
+        if order.buyer_user_id.as_ref().is_none_or(|id| *id != user_id) {
             return Err(Status::not_found(format!(
                 "Could not find order by order_id '{}'",
                 order_id

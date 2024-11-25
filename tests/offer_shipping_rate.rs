@@ -21,7 +21,7 @@ async fn offer_shipping_rate_test() {
 
     // Put Shipping Rate : ok
     let req = ctx
-        .auth_req(PutShippingRateToOfferRequest {
+        .owner_auth_req(PutShippingRateToOfferRequest {
             offer_id: offer.offer_id.clone(),
             unit_amount: 1450,
             currency: 1,
@@ -39,7 +39,7 @@ async fn offer_shipping_rate_test() {
 
     // Put Shipping Rate : update : ok
     let req = ctx
-        .auth_req(PutShippingRateToOfferRequest {
+        .owner_auth_req(PutShippingRateToOfferRequest {
             offer_id: offer.offer_id.clone(),
             unit_amount: 700,
             currency: 1,
@@ -60,7 +60,7 @@ async fn offer_shipping_rate_test() {
 
     // Remove Shipping Rate : ok
     let req = ctx
-        .auth_req(RemoveShippingRateFromOfferRequest {
+        .owner_auth_req(RemoveShippingRateFromOfferRequest {
             offer_id: offer.offer_id.clone(),
         })
         .await;
@@ -73,7 +73,7 @@ async fn offer_shipping_rate_test() {
 
     // Put Shipping Rate : ok
     let req = ctx
-        .auth_req(PutShippingRateToOfferRequest {
+        .owner_auth_req(PutShippingRateToOfferRequest {
             offer_id: offer.offer_id.clone(),
             unit_amount: 700,
             currency: 1,

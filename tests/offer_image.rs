@@ -22,7 +22,7 @@ async fn offer_image_test() {
 
     // Add Image to Offer : ok
     let req = ctx
-        .auth_req(AddImageToOfferRequest {
+        .owner_auth_req(AddImageToOfferRequest {
             offer_id: offer.offer_id.clone(),
             data: IMAGE_DATA.into(),
             ordering: 1,
@@ -37,7 +37,7 @@ async fn offer_image_test() {
 
     // Remove Image from Offer : ok
     let req = ctx
-        .auth_req(RemoveImageFromOfferRequest {
+        .owner_auth_req(RemoveImageFromOfferRequest {
             offer_image_id: image.offer_image_id.clone(),
             offer_id: offer.offer_id.clone(),
         })

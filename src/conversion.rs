@@ -279,59 +279,52 @@ fn build_order_type(
     order_type_one_off: Option<Box<order_type_one_off::Data>>,
     order_type_subscription: Option<Box<order_type_subscription::Data>>,
 ) -> OrderType {
-    match order_type_key {
-        OrderTypeKey::OneOff => {
-            let one_off = order_type_one_off.expect("OrderTypeKey == OneOff");
-            OrderType {
-                order_type_kind: Some(OrderTypeKind::OneOff(OneOff {
-                    payed_at: one_off.payed_at.map(|p| p.timestamp()),
-                })),
-            }
-        }
+    let order_type_kind = match order_type_key {
+        OrderTypeKey::OneOff => order_type_one_off.map(|one_off| {
+            OrderTypeKind::OneOff(OneOff {
+                payed_at: one_off.payed_at.map(|p| p.timestamp()),
+            })
+        }),
         OrderTypeKey::Subscription => {
-            let subscription =
-                order_type_subscription.expect("OrderTypeKey == Subscription");
-            OrderType {
-                order_type_kind: Some(OrderTypeKind::Subscription(
-                    Subscription {
-                        current_period_start: subscription
-                            .current_period_start
-                            .timestamp(),
-                        current_period_end: subscription
-                            .current_period_end
-                            .timestamp(),
-                        status: subscription.status,
-                        payed_at: subscription.payed_at.map(|p| p.timestamp()),
-                        payed_until: subscription
-                            .payed_untill
-                            .map(|p| p.timestamp()),
-                        canceled_at: subscription
-                            .cancelled_at
-                            .map(|c| c.timestamp()),
-                        cancel_at: subscription
-                            .cancel_at
-                            .map(|c| c.timestamp()),
-                    },
-                )),
-            }
+            order_type_subscription.map(|subscription| {
+                OrderTypeKind::Subscription(Subscription {
+                    current_period_start: subscription
+                        .current_period_start
+                        .timestamp(),
+                    current_period_end: subscription
+                        .current_period_end
+                        .timestamp(),
+                    status: subscription.status,
+                    payed_at: subscription.payed_at.map(|p| p.timestamp()),
+                    payed_until: subscription
+                        .payed_untill
+                        .map(|p| p.timestamp()),
+                    canceled_at: subscription
+                        .cancelled_at
+                        .map(|c| c.timestamp()),
+                    cancel_at: subscription.cancel_at.map(|c| c.timestamp()),
+                })
+            })
         }
-    }
+    };
+
+    OrderType { order_type_kind }
 }
 
 fn build_payment_method(
     payment_method_key: PaymentMethodKey,
     payment_method_stripe: Option<Box<payment_method_stripe::Data>>,
 ) -> PaymentMethod {
-    match payment_method_key {
-        PaymentMethodKey::Stripe => {
-            let stripe =
-                payment_method_stripe.expect("PaymentMethodKey == Stripe");
-            PaymentMethod {
-                payment_method_kind: Some(PaymentMethodKind::Stripe(Stripe {
-                    subscription_id: stripe.stripe_subscription_id,
-                })),
-            }
-        }
+    let payment_method_kind = match payment_method_key {
+        PaymentMethodKey::Stripe => payment_method_stripe.map(|stripe| {
+            PaymentMethodKind::Stripe(Stripe {
+                subscription_id: stripe.stripe_subscription_id,
+            })
+        }),
+    };
+
+    PaymentMethod {
+        payment_method_kind,
     }
 }
 

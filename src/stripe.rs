@@ -6,8 +6,7 @@ use stripe_billing::subscription::UpdateSubscription;
 use stripe_checkout::checkout_session::*;
 use stripe_checkout::CheckoutSessionMode;
 use stripe_connect::account::{
-    CapabilitiesParam, CapabilityParam, CreateAccount, CreateAccountType,
-    RetrieveAccount,
+    CapabilitiesParam, CreateAccount, CreateAccountType, RetrieveAccount,
 };
 use stripe_connect::account_link::{CreateAccountLink, CreateAccountLinkType};
 use stripe_connect::Account;
@@ -27,12 +26,6 @@ pub struct StripeService {
 }
 
 impl StripeService {
-    fn capability_requested() -> Option<CapabilityParam> {
-        Some(CapabilityParam {
-            requested: Some(true),
-        })
-    }
-
     fn shipping_rate_key() -> String {
         String::from("SHIPPING")
     }
@@ -55,8 +48,6 @@ impl StripeService {
         Ok(CreateAccount::new()
             .type_(CreateAccountType::Standard)
             .capabilities(CapabilitiesParam {
-                amazon_pay_payments: Self::capability_requested(),
-                bank_transfer_payments: Self::capability_requested(),
                 ..Default::default()
             })
             .send(&self.client)
@@ -155,7 +146,7 @@ impl StripeService {
                 );
             let fixed_amount = CreateCheckoutSessionShippingOptionsShippingRateDataFixedAmount {
                         amount: shipping_rate.unit_amount.into(),
-                        currency: Currency::from_str(&shipping_rate.currency.to_lowercase()).unwrap(),
+                        currency: Currency::from_str(&shipping_rate.currency.trim_start_matches("CURRENCY_CODE_").to_lowercase()).unwrap(),
                         currency_options: None,
                     };
             let shipping_rate_data = CreateCheckoutSessionShippingOptionsShippingRateData{
@@ -206,8 +197,13 @@ impl StripeService {
                 };
 
         let price_data = CreateCheckoutSessionLineItemsPriceData {
-            currency: Currency::from_str(&price.currency.to_lowercase())
-                .unwrap(),
+            currency: Currency::from_str(
+                &price
+                    .currency
+                    .trim_start_matches("CURRENCY_CODE_")
+                    .to_lowercase(),
+            )
+            .unwrap(),
             product_data: Some(product),
             unit_amount: Some(i64::from(price.unit_amount)),
             recurring,

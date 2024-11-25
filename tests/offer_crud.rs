@@ -17,7 +17,7 @@ async fn test_offers() {
     // List Offers : empty : ok
     let res = commerce_client
         .list_offers(ListOffersRequest {
-            owner: Some(ctx.user_id()),
+            owner: Some(ctx.owner_user_id()),
             ..Default::default()
         })
         .await
@@ -31,7 +31,7 @@ async fn test_offers() {
     // Create Offer : ok
     let offer_1_name = random_string(8);
     let req = ctx
-        .auth_req(CreateOfferRequest {
+        .owner_auth_req(CreateOfferRequest {
             details: Some(offer::Details {
                 name: offer_1_name.clone(),
                 description: None,
@@ -58,7 +58,7 @@ async fn test_offers() {
     // List Offers : ok
     let res = commerce_client
         .list_offers(ListOffersRequest {
-            owner: Some(ctx.user_id()),
+            owner: Some(ctx.owner_user_id()),
             ..Default::default()
         })
         .await
@@ -73,7 +73,7 @@ async fn test_offers() {
     // Update Offer : ok
     let offer_1_name = random_string(8);
     let req = ctx
-        .auth_req(UpdateOfferRequest {
+        .owner_auth_req(UpdateOfferRequest {
             offer_id: offer.offer_id,
             details: Some(offer::Details {
                 name: offer_1_name.clone(),
@@ -94,7 +94,7 @@ async fn test_offers() {
 
     // Delete Offer : ok
     let req = ctx
-        .auth_req(DeleteOfferRequest {
+        .owner_auth_req(DeleteOfferRequest {
             offer_id: offer.offer_id,
         })
         .await;

@@ -30,7 +30,7 @@ async fn offer_file_multipart_test() {
 
     // Initiate Multipart Upload : ok
     let req = ctx
-        .auth_req(InitiateMultipartUploadRequest {
+        .owner_auth_req(InitiateMultipartUploadRequest {
             file_name: random_string(8),
             offer_id: offer.offer_id.clone(),
             total_size_bytes: MOCK_DATA_SIZE as u64,
@@ -50,7 +50,7 @@ async fn offer_file_multipart_test() {
     let mut parts = Vec::new();
     for (i, chunk) in data.chunks(5243000).enumerate() {
         let req = ctx
-            .auth_req(PutMultipartChunkRequest {
+            .owner_auth_req(PutMultipartChunkRequest {
                 offer_file_id: offer_file_id.clone(),
                 upload_id: upload_id.clone(),
                 part_number: i as i32 + 1,
@@ -69,7 +69,7 @@ async fn offer_file_multipart_test() {
 
     // Complete Multipart Upload : ok
     let req = ctx
-        .auth_req(CompleteMultipartUploadRequest {
+        .owner_auth_req(CompleteMultipartUploadRequest {
             offer_file_id: offer_file_id.clone(),
             upload_id: upload_id.clone(),
             parts: parts,
@@ -86,7 +86,7 @@ async fn offer_file_multipart_test() {
 
     // Delete File : ok
     let req = ctx
-        .auth_req(RemoveFileFromOfferRequest {
+        .owner_auth_req(RemoveFileFromOfferRequest {
             offer_file_id: file.offer_file_id.clone(),
         })
         .await;

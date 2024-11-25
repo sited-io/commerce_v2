@@ -1,3 +1,4 @@
+use prisma_client_rust::chrono::{DateTime, FixedOffset};
 use prisma_client_rust::or;
 use std::future::Future;
 use std::sync::Arc;
@@ -15,9 +16,10 @@ use crate::prisma::offer::{OrderByParam, WhereParam};
 use crate::prisma::read_filters::{StringFilter, StringNullableFilter};
 use crate::prisma::{
     offer, offer_details, offer_file, offer_image, offer_price,
-    offer_shipping_rate, order, price_recurring, shop, stripe_account,
+    offer_shipping_rate, order, order_type_one_off, order_type_subscription,
+    payment_method_stripe, price_recurring, shop, stripe_account,
     stripe_account_status_pending, sub_webiste, user_quota, OfferTypeKey,
-    PrismaClient,
+    OrderTypeKey, PaymentMethodKey, PrismaClient,
 };
 use crate::Error;
 
@@ -653,6 +655,41 @@ impl CommerceRepository {
         Ok(())
     }
 
+    pub async fn create_order(
+        &self,
+        offer_id: &str,
+        buyer_user_id: Option<&String>,
+        order_type: OrderTypeKey,
+        payment_method: PaymentMethodKey,
+    ) -> Result<order::Data, Error> {
+        let order = self
+            .db
+            .order()
+            .create(
+                order_type,
+                payment_method,
+                offer::offer_id::equals(offer_id.to_owned()),
+                vec![order::buyer_user_id::set(buyer_user_id.cloned())],
+            )
+            .exec()
+            .await?;
+
+        match payment_method {
+            PaymentMethodKey::Stripe => {
+                self.db
+                    .payment_method_stripe()
+                    .create(
+                        order::order_id::equals(order.order_id.to_owned()),
+                        vec![],
+                    )
+                    .exec()
+                    .await?;
+            }
+        };
+
+        Ok(order)
+    }
+
     pub async fn get_order(
         &self,
         order_id: &str,
@@ -661,19 +698,29 @@ impl CommerceRepository {
             .db
             .order()
             .find_unique(order::order_id::equals(order_id.to_owned()))
+            .with(order::offer::fetch())
             .with(order::order_type_one_off::fetch())
             .with(order::order_type_subscription::fetch())
+            .with(order::payment_method_stripe::fetch())
             .exec()
             .await?)
     }
 
     pub async fn list_orders(
         &self,
-        user_id: &str,
+        user_id: Option<&String>,
         offer_id: Option<&String>,
     ) -> Result<Vec<order::Data>, Error> {
         let mut query = Vec::with_capacity(2);
-        query.push(order::buyer_user_id::equals(user_id.to_owned()));
+
+        if let Some(user_id) = user_id {
+            query.push(or!(
+                order::buyer_user_id::equals(Some(user_id.to_owned())),
+                order::offer::is(vec![offer::owner::equals(
+                    user_id.to_owned()
+                )])
+            ));
+        }
 
         if let Some(offer_id) = offer_id {
             query.push(order::offer_id::equals(offer_id.to_owned()));
@@ -683,10 +730,105 @@ impl CommerceRepository {
             .db
             .order()
             .find_many(query)
+            .with(order::offer::fetch())
             .with(order::order_type_one_off::fetch())
             .with(order::order_type_subscription::fetch())
+            .with(order::payment_method_stripe::fetch())
             .exec()
             .await?)
+    }
+
+    pub async fn upsert_order_payment_method(
+        &self,
+        order_id: &str,
+        stripe_subscription_id: Option<&String>,
+    ) -> Result<(), Error> {
+        self.db
+            .payment_method_stripe()
+            .upsert(
+                payment_method_stripe::order_id::equals(order_id.to_owned()),
+                payment_method_stripe::create(
+                    order::order_id::equals(order_id.to_owned()),
+                    vec![payment_method_stripe::stripe_subscription_id::set(
+                        stripe_subscription_id.cloned(),
+                    )],
+                ),
+                vec![payment_method_stripe::stripe_subscription_id::set(
+                    stripe_subscription_id.cloned(),
+                )],
+            )
+            .exec()
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn upsert_order_type_one_off(
+        &self,
+        order_id: &str,
+        payed_at: Option<DateTime<FixedOffset>>,
+    ) -> Result<(), Error> {
+        self.db
+            .order_type_one_off()
+            .upsert(
+                order_type_one_off::order_id::equals(order_id.to_owned()),
+                order_type_one_off::create(
+                    order::order_id::equals(order_id.to_owned()),
+                    vec![order_type_one_off::payed_at::set(payed_at)],
+                ),
+                vec![order_type_one_off::payed_at::set(payed_at)],
+            )
+            .exec()
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn upsert_order_type_subscription(
+        &self,
+        order_id: &str,
+        current_period_start: DateTime<FixedOffset>,
+        current_period_end: DateTime<FixedOffset>,
+        status: &str,
+        payed_at: Option<DateTime<FixedOffset>>,
+        payed_until: Option<DateTime<FixedOffset>>,
+        canceled_at: Option<DateTime<FixedOffset>>,
+        cancel_at: Option<DateTime<FixedOffset>>,
+    ) -> Result<(), Error> {
+        self.db
+            .order_type_subscription()
+            .upsert(
+                order_type_subscription::order_id::equals(order_id.to_owned()),
+                order_type_subscription::create(
+                    current_period_start,
+                    current_period_end,
+                    status.to_owned(),
+                    order::order_id::equals(order_id.to_owned()),
+                    vec![
+                        order_type_subscription::payed_at::set(payed_at),
+                        order_type_subscription::payed_untill::set(payed_until),
+                        order_type_subscription::cancelled_at::set(canceled_at),
+                        order_type_subscription::cancel_at::set(cancel_at),
+                    ],
+                ),
+                vec![
+                    order_type_subscription::current_period_start::set(
+                        current_period_start,
+                    ),
+                    order_type_subscription::current_period_end::set(
+                        current_period_end,
+                    ),
+                    order_type_subscription::status::set(status.to_owned()),
+                    order_type_subscription::payed_at::set(payed_at),
+                    order_type_subscription::payed_untill::set(payed_until),
+                    order_type_subscription::cancelled_at::set(canceled_at),
+                    order_type_subscription::cancel_at::set(cancel_at),
+                ],
+            )
+            .exec()
+            .await?;
+
+        Ok(())
     }
 
     pub async fn create_stripe_account(
@@ -751,13 +893,13 @@ impl CommerceRepository {
 
     pub async fn get_stripe_account(
         &self,
-        stripe_account_id: &str,
+        website_id: &str,
     ) -> Result<Option<stripe_account::Data>, Error> {
         Ok(self
             .db
             .stripe_account()
-            .find_unique(stripe_account::stripe_account_id::equals(
-                stripe_account_id.to_owned(),
+            .find_unique(stripe_account::website_id::equals(
+                website_id.to_owned(),
             ))
             .with(stripe_account::status_configured::fetch())
             .with(stripe_account::status_pending::fetch())

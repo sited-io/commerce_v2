@@ -53,7 +53,7 @@ async fn offer_price_test() {
 
     // Put Price : ok
     let req = ctx
-        .auth_req(PutPriceToOfferRequest {
+        .owner_auth_req(PutPriceToOfferRequest {
             offer_id: offer.offer_id.clone(),
             unit_amount: 1450,
             currency: 1,
@@ -67,7 +67,7 @@ async fn offer_price_test() {
 
     // Put Price : update : ok
     let req = ctx
-        .auth_req(PutPriceToOfferRequest {
+        .owner_auth_req(PutPriceToOfferRequest {
             offer_id: offer.offer_id.clone(),
             unit_amount: 700,
             currency: 1,
@@ -83,7 +83,7 @@ async fn offer_price_test() {
 
     // Remove Price : ok
     let req = ctx
-        .auth_req(RemovePriceFromOfferRequest {
+        .owner_auth_req(RemovePriceFromOfferRequest {
             offer_id: offer.offer_id.clone(),
         })
         .await;
@@ -93,7 +93,7 @@ async fn offer_price_test() {
 
     // Put Price : ok
     let req = ctx
-        .auth_req(PutPriceToOfferRequest {
+        .owner_auth_req(PutPriceToOfferRequest {
             offer_id: offer.offer_id.clone(),
             unit_amount: 700,
             currency: 1,

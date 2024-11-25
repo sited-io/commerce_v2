@@ -18,7 +18,7 @@ async fn shop_test() {
     // Create Shop : ok
     let website_id = Uuid::new_v4().to_string();
     let req = ctx
-        .auth_req(CreateShopRequest {
+        .owner_auth_req(CreateShopRequest {
             website_id: website_id.clone(),
         })
         .await;
@@ -46,7 +46,7 @@ async fn shop_test() {
     // Add offer to shop : ok
     let offer = create_offer(&mut ctx, &mut commerce_client).await;
     let req = ctx
-        .auth_req(AddOfferToShopRequest {
+        .owner_auth_req(AddOfferToShopRequest {
             offer_id: offer.offer_id.clone(),
             shop_id: shop.shop_id.clone(),
         })
@@ -57,7 +57,7 @@ async fn shop_test() {
 
     // Remove offer from shop : ok
     let req = ctx
-        .auth_req(RemoveOfferFromShopRequest {
+        .owner_auth_req(RemoveOfferFromShopRequest {
             offer_id: offer.offer_id.clone(),
             shop_id: shop.shop_id.clone(),
         })
@@ -70,7 +70,7 @@ async fn shop_test() {
 
     // Delete Shop
     let req = ctx
-        .auth_req(DeleteShopRequest {
+        .owner_auth_req(DeleteShopRequest {
             shop_id: shop.shop_id.clone(),
         })
         .await;

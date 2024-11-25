@@ -19,7 +19,7 @@ pub async fn create_offer(
     client: &mut CommerceServiceClient<Channel>,
 ) -> Offer {
     let req = ctx
-        .auth_req(CreateOfferRequest {
+        .owner_auth_req(CreateOfferRequest {
             details: Some(offer::Details {
                 name: random_string(19),
                 description: None,
@@ -61,7 +61,7 @@ pub async fn delete_offer(
     offer_id: &str,
 ) {
     let req = ctx
-        .auth_req(DeleteOfferRequest {
+        .owner_auth_req(DeleteOfferRequest {
             offer_id: offer_id.to_owned(),
         })
         .await;

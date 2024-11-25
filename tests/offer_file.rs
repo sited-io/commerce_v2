@@ -22,7 +22,7 @@ async fn offer_file_test() {
     // Add File to Offer : ok
     let first_file_name = common::random_string(8);
     let req = ctx
-        .auth_req(AddFileToOfferRequest {
+        .owner_auth_req(AddFileToOfferRequest {
             file_name: first_file_name.clone(),
             offer_id: offer.offer_id.clone(),
             content: common::fixtures::IMAGE_DATA.into(),
@@ -37,7 +37,7 @@ async fn offer_file_test() {
     // Add Second File : ok
     let second_file_name = common::random_string(10);
     let req = ctx
-        .auth_req(AddFileToOfferRequest {
+        .owner_auth_req(AddFileToOfferRequest {
             file_name: second_file_name.clone(),
             offer_id: offer.offer_id.clone(),
             content: common::fixtures::IMAGE_DATA.into(),
@@ -55,7 +55,7 @@ async fn offer_file_test() {
 
     // Change Order : ok
     let req = ctx
-        .auth_req(UpdateFileOrderingRequest {
+        .owner_auth_req(UpdateFileOrderingRequest {
             offer_file_id: first_file.offer_file_id.clone(),
             ordering: 3,
         })
@@ -70,7 +70,7 @@ async fn offer_file_test() {
 
     // Download File : ok
     let req = ctx
-        .auth_req(DownloadFileRequest {
+        .owner_auth_req(DownloadFileRequest {
             offer_file_id: first_file.offer_file_id.clone(),
         })
         .await;
@@ -90,13 +90,13 @@ async fn offer_file_test() {
 
     // Delete Files : ok
     let req = ctx
-        .auth_req(RemoveFileFromOfferRequest {
+        .owner_auth_req(RemoveFileFromOfferRequest {
             offer_file_id: first_file.offer_file_id.clone(),
         })
         .await;
     commerce_client.remove_file_from_offer(req).await.unwrap();
     let req = ctx
-        .auth_req(RemoveFileFromOfferRequest {
+        .owner_auth_req(RemoveFileFromOfferRequest {
             offer_file_id: second_file.offer_file_id.clone(),
         })
         .await;

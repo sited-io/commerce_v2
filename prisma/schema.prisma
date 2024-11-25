@@ -21,6 +21,7 @@ model Offer {
   images        OfferImage[]
   files         OfferFile[]
   shops         Shop[]
+  Order         Order[]
 
   @@map("offers")
 }
@@ -141,8 +142,8 @@ model Shop {
 
 model Order {
   order_id      String   @id @default(uuid()) @db.Uuid
-  buyer_user_id String
   offer_id      String   @db.Uuid
+  buyer_user_id String?
   created_at    DateTime @default(now()) @db.Timestamptz()
   updated_at    DateTime @updatedAt @db.Timestamptz()
 
@@ -151,6 +152,8 @@ model Order {
   order_type_subscription OrderTypeSubscription?
   payment_method          PaymentMethodKey
   payment_method_stripe   PaymentMethodStripe?
+
+  offer Offer @relation(fields: [offer_id], references: [offer_id])
 
   @@map("orders")
 }
