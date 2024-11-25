@@ -1,6 +1,4 @@
-use service_apis::sited_io::commerce::v2::{
-    GetOrderRequest, ListOrdersRequest,
-};
+use service_apis::sited_io::commerce::v2::ListOrdersRequest;
 
 mod common;
 
