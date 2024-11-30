@@ -52,7 +52,7 @@ job "commerce-v2" {
         change_mode = "restart"
         data        = <<EOF
 {{ with nomadVar "nomad/jobs/commerce_v2" }}
-RUST_LOG='{{ .LOG_LEVEL }}'
+RUST_LOG='{{ .RUST_LOG }}'
 {{ end }}
 
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
