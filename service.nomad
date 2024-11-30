@@ -1,0 +1,111 @@
+job "commerce_v2" {
+  datacenters = ["dc1"]
+  type        = "service"
+
+  group "commerce_v2-api" {
+    count = 1
+
+    network {
+      mode = "bridge"
+
+      port "grpc" {}
+    }
+
+    service {
+      name = "commerce_v2-api"
+      port = "grpc"
+
+      connect {
+        sidecar_service {
+          proxy {
+            upstreams {
+              destination_name = "postgres-sql"
+              local_bind_port  = 5432
+            }
+          }
+        }
+      }
+
+      check {
+        type     = "grpc"
+        interval = "20s"
+        timeout  = "2s"
+      }
+    }
+
+    task "commerce_v2-api" {
+      driver = "docker"
+
+      resources {
+        cpu        = 100
+        memory     = 256
+        memory_max = 256
+      }
+
+      vault {
+        policies = ["service-commerce_v2"]
+      }
+
+      template {
+        destination = "${NOMAD_SECRETS_DIR}/.env"
+        env         = true
+        change_mode = "restart"
+        data        = <<EOF
+{{ with nomadVar "nomad/jobs/commerce_v2" }}
+RUST_LOG='{{ .LOG_LEVEL }}'
+{{ end }}
+
+HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
+
+DB_HOST='{{ env "NOMAD_UPSTREAM_IP_postgres-sql" }}'
+DB_PORT='{{ env "NOMAD_UPSTREAM_PORT_postgres-sql" }}'
+DB_DBNAME='commerce_v2'
+DB_USER='commerce_v2_user'
+{{ with secret "database/static-creds/commerce_v2_user" }}
+DB_PASSWORD='{{ .Data.password }}'
+{{ end }}
+DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_DBNAME"
+
+{{ with nomadVar "nomad/jobs/" }}
+JWKS_HOST='{{ .JWKS_HOST }}'
+JWKS_URL='{{ .JWKS_URL }}'
+{{ end }}
+
+{{ with nomadVar "nomad/jobs/commerce_v2" }}
+NATS_HOST='{{ .NATS_HOST }}'
+NATS_USER='{{ .NATS_USER }}'
+{{ end }}
+{{ with secret "kv2/data/services" }}
+NATS_PASSWORD='{{ .Data.data.NATS_PASSWORD }}'
+{{ end }}
+
+{{ with nomadVar "nomad/jobs/commerce_v2" }}
+S3_BUCKET_NAME='{{ .S3_BUCKET_NAME }}'
+S3_BUCKET_ENDPOINT='{{ .S3_BUCKET_ENDPOINT }}'
+S3_ACCESS_KEY_ID='{{ .S3_ACCESS_KEY_ID }}'
+S3_MAX_ALLOWED_IMAGE_SIZE_BYTES='{{ .S3_MAX_ALLOWED_IMAGE_SIZE_BYTES }}'
+S3_BASE_URL='{{ .S3_BASE_URL }}'
+{{ end }}
+{{ with secret "kv2/data/services/commerce_v2" }}
+S3_SECRET_ACCESS_KEY='{{ .Data.data.S3_SECRET_ACCESS_KEY }}'
+{{ end }}
+
+{{ with secret "kv2/data/services/commerce_v2" }}
+STRIPE_SECRET_KEY='{{ .Data.data.STRIPE_SECRET_KEY }}'
+{{ end }}
+
+{{ with nomadVar "nomad/jobs/commerce_v2" }}
+DEFAULT_USER_QUOTA_MAX_ALLOWED_SIZE_BYTES='500000000'
+DEFAULT_PLATFORM_FEE_PERCENT='1'
+DEFAULT_MINIMUM_PLATFORM_FEE_CENT='50'
+{{ end }}
+EOF
+      }
+
+      config {
+        image      = "__IMAGE__"
+        force_pull = true
+      }
+    }
+  }
+}
