@@ -1,8 +1,8 @@
-job "commerce_v2" {
+job "commerce-v2" {
   datacenters = ["dc1"]
   type        = "service"
 
-  group "commerce_v2-api" {
+  group "commerce-v2-api" {
     count = 1
 
     network {
@@ -12,7 +12,7 @@ job "commerce_v2" {
     }
 
     service {
-      name = "commerce_v2-api"
+      name = "commerce-v2-api"
       port = "grpc"
 
       connect {
@@ -33,7 +33,7 @@ job "commerce_v2" {
       }
     }
 
-    task "commerce_v2-api" {
+    task "commerce-v2-api" {
       driver = "docker"
 
       resources {
