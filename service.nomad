@@ -57,14 +57,9 @@ RUST_LOG='{{ .RUST_LOG }}'
 
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 
-DB_HOST='{{ env "NOMAD_UPSTREAM_IP_postgres-sql" }}'
-DB_PORT='{{ env "NOMAD_UPSTREAM_PORT_postgres-sql" }}'
-DB_DBNAME='commerce_v2'
-DB_USER='commerce_v2_user'
 {{ with secret "database/static-creds/commerce_v2_user" }}
-DB_PASSWORD='{{ .Data.password }}'
+DATABASE_URL="postgresql://commerce_v2_user:{{ .Data.password }}@{{ env "NOMAD_UPSTREAM_IP_postgres-sql" }}:{{ env "NOMAD_UPSTREAM_PORT_postgres-sql" }}/commerce_v2"
 {{ end }}
-DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_DBNAME"
 
 {{ with nomadVar "nomad/jobs/" }}
 JWKS_HOST='{{ .JWKS_HOST }}'
