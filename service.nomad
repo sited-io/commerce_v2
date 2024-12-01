@@ -51,7 +51,7 @@ job "commerce-v2" {
         env         = true
         change_mode = "restart"
         data        = <<EOF
-{{ with nomadVar "nomad/jobs/commerce_v2" }}
+{{ with nomadVar "nomad/jobs/commerce-v2" }}
 RUST_LOG='{{ .RUST_LOG }}'
 {{ end }}
 
@@ -71,7 +71,7 @@ JWKS_HOST='{{ .JWKS_HOST }}'
 JWKS_URL='{{ .JWKS_URL }}'
 {{ end }}
 
-{{ with nomadVar "nomad/jobs/commerce_v2" }}
+{{ with nomadVar "nomad/jobs/commerce-v2" }}
 NATS_HOST='{{ .NATS_HOST }}'
 NATS_USER='{{ .NATS_USER }}'
 {{ end }}
@@ -79,7 +79,7 @@ NATS_USER='{{ .NATS_USER }}'
 NATS_PASSWORD='{{ .Data.data.NATS_PASSWORD }}'
 {{ end }}
 
-{{ with nomadVar "nomad/jobs/commerce_v2" }}
+{{ with nomadVar "nomad/jobs/commerce-v2" }}
 S3_BUCKET_NAME='{{ .S3_BUCKET_NAME }}'
 S3_BUCKET_ENDPOINT='{{ .S3_BUCKET_ENDPOINT }}'
 S3_ACCESS_KEY_ID='{{ .S3_ACCESS_KEY_ID }}'
@@ -94,7 +94,7 @@ S3_SECRET_ACCESS_KEY='{{ .Data.data.S3_SECRET_ACCESS_KEY }}'
 STRIPE_SECRET_KEY='{{ .Data.data.STRIPE_SECRET_KEY }}'
 {{ end }}
 
-{{ with nomadVar "nomad/jobs/commerce_v2" }}
+{{ with nomadVar "nomad/jobs/commerce-v2" }}
 DEFAULT_USER_QUOTA_MAX_ALLOWED_SIZE_BYTES='{{ .DEFAULT_USER_QUOTA_MAX_ALLOWED_SIZE_BYTES }}'
 DEFAULT_PLATFORM_FEE_PERCENT='{{ .DEFAULT_PLATFORM_FEE_PERCENT }}'
 DEFAULT_MINIMUM_PLATFORM_FEE_CENT='{{ .DEFAULT_MINIMUM_PLATFORM_FEE_CENT }}'
