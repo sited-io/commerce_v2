@@ -47,7 +47,7 @@ job "commerce-v2" {
       }
 
       vault {
-        policies = ["service-commerce_v2"]
+        policies = ["service-commerce-v2"]
       }
 
       template {
