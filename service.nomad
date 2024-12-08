@@ -19,6 +19,10 @@ job "commerce-v2" {
         sidecar_service {
           proxy {
             upstreams {
+              destination_name = "nats"
+              local_bind_port = 4222
+            }
+            upstreams {
               destination_name = "postgres-sql"
               local_bind_port  = 5432
             }
@@ -57,6 +61,10 @@ RUST_LOG='{{ .RUST_LOG }}'
 
 HOST='0.0.0.0:{{ env "NOMAD_PORT_grpc" }}'
 
+NATS_HOST='{{ env "NOMAD_ADDR_nats" }}'
+NATS_USER='{{- with nomadVar "nomad/jobs" -}}{{ .NATS_USER }}{{- end -}}'
+NATS_PASSWORD='{{- with secret "kv2/data/services" -}}{{ .Data.data.NATS_PASSWORD }}{{- end -}}'
+
 {{ with secret "database/static-creds/commerce_v2_user" }}
 DATABASE_URL="postgresql://commerce_v2_user:{{ .Data.password }}@{{ env "NOMAD_UPSTREAM_IP_postgres-sql" }}:{{ env "NOMAD_UPSTREAM_PORT_postgres-sql" }}/commerce_v2"
 {{ end }}
@@ -64,14 +72,6 @@ DATABASE_URL="postgresql://commerce_v2_user:{{ .Data.password }}@{{ env "NOMAD_U
 {{ with nomadVar "nomad/jobs/" }}
 JWKS_HOST='{{ .JWKS_HOST }}'
 JWKS_URL='{{ .JWKS_URL }}'
-{{ end }}
-
-{{ with nomadVar "nomad/jobs/commerce-v2" }}
-NATS_HOST='{{ .NATS_HOST }}'
-NATS_USER='{{ .NATS_USER }}'
-{{ end }}
-{{ with secret "kv2/data/services" }}
-NATS_PASSWORD='{{ .Data.data.NATS_PASSWORD }}'
 {{ end }}
 
 {{ with nomadVar "nomad/jobs/commerce-v2" }}

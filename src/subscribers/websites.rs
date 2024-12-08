@@ -53,7 +53,9 @@ impl WebsiteSubscriber {
                     action
                 )))
             } {
-                tracing::error!("[WebsiteSubscriber::subscrbe] {:?}", err)
+                tracing::error!("[WebsiteSubscriber::subscribe] {:?}", err);
+            } else {
+                tracing::info!("[WebsiteSubscriber::subscribe] Successfully handled {} for website {}", action, website.website_id);
             }
         }
     }
