@@ -81,11 +81,11 @@ S3_ACCESS_KEY_ID='{{ .S3_ACCESS_KEY_ID }}'
 S3_MAX_ALLOWED_IMAGE_SIZE_BYTES='{{ .S3_MAX_ALLOWED_IMAGE_SIZE_BYTES }}'
 S3_BASE_URL='{{ .S3_BASE_URL }}'
 {{ end }}
-{{ with secret "kv2/data/services/commerce_v2" }}
+{{ with secret "kv2/data/services/commerce-v2" }}
 S3_SECRET_ACCESS_KEY='{{ .Data.data.S3_SECRET_ACCESS_KEY }}'
 {{ end }}
 
-{{ with secret "kv2/data/services/commerce_v2" }}
+{{ with secret "kv2/data/services/commerce-v2" }}
 STRIPE_SECRET_KEY='{{ .Data.data.STRIPE_SECRET_KEY }}'
 {{ end }}
 
