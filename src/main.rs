@@ -1,3 +1,4 @@
+use service_apis::sited_io::commerce::v2::commerce_service_server::CommerceServiceServer;
 use std::sync::Arc;
 use tonic::transport::Server;
 
@@ -87,6 +88,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         default_minimum_platform_fee_cent as u32,
     );
 
+    // initialize health service
+    let (mut health_reporter, health_service) =
+        tonic_health::server::health_reporter();
+    health_reporter
+        .set_serving::<CommerceServiceServer<CommerceService>>()
+        .await;
+
     // initialize layers
     let trace_layer = init_trace_layer();
     let cors_layer = init_cors_layer();
@@ -106,6 +114,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .accept_http1(true)
                 .layer(trace_layer)
                 .layer(cors_layer)
+                .add_service(tonic_web::enable(health_service))
                 .add_service(tonic_web::enable(service))
                 .serve(host.parse().unwrap())
                 .await

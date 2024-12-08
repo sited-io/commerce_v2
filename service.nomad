@@ -30,11 +30,11 @@ job "commerce-v2" {
         }
       }
 
-      # check {
-      #   type     = "grpc"
-      #   interval = "20s"
-      #   timeout  = "2s"
-      # }
+      check {
+        type     = "grpc"
+        interval = "20s"
+        timeout  = "2s"
+      }
     }
 
     task "commerce-v2-api" {
